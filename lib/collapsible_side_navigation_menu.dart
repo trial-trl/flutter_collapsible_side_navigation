@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app_expansible_panel_list.dart';
 import 'collapsible_side_navigation.dart';
 import 'collapsible_tile.dart';
 import 'side_navigation_item.dart';
 
 class CollapsibleSideNavigationMenuContext with ChangeNotifier {
-  late int _selected;
-  int get selected => _selected;
-  set selected(int v) {
+  late List<int> _selected;
+  List<int> get selected => _selected;
+  set selected(List<int> v) {
     _selected = v;
     notifyListeners();
   }
@@ -21,7 +22,7 @@ class CollapsibleSideNavigationMenuContext with ChangeNotifier {
   }
 
   CollapsibleSideNavigationMenuContext({
-    int selected = 0,
+    List<int> selected = const [],
     List<SideNavigationItem> navigationItems = const [],
   }) {
     _selected = selected;
@@ -31,8 +32,12 @@ class CollapsibleSideNavigationMenuContext with ChangeNotifier {
 
 class CollapsibleSideNavigationMenu extends StatefulWidget {
   final List<SideNavigationItem> menu;
+  final bool onTapNestedMenuSelectFirst;
 
-  CollapsibleSideNavigationMenu({required this.menu});
+  const CollapsibleSideNavigationMenu({
+    required this.menu,
+    this.onTapNestedMenuSelectFirst = false,
+  });
 
   @override
   _CollapsibleSideNavigationMenuState createState() =>
@@ -75,31 +80,134 @@ class _CollapsibleSideNavigationMenuState
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
                         ),
-                        Divider(
-                          height: 2.0,
-                          color: Color(0xffeeeeee),
-                        )
+                        Divider(height: 1.0)
                       ],
                     ),
                   ),
                 );
               }
 
-              return Container(
-                margin: item.isBackButton ? EdgeInsets.only(bottom: 20) : null,
-                child: CollapsibleTile(
-                  onTap: () {
-                    menuState.selected = counter;
-                  },
-                  isSelected: menuState.selected == counter,
-                  navigationItem: item,
-                ),
-              );
+              return renderItemMenu(item);
             },
             itemCount: menuState.navigationItems.length,
           );
         },
       ),
     );
+  }
+
+  Widget renderItemMenu(
+    SideNavigationItem item, [
+    List<SideNavigationItem> parent = const [],
+  ]) {
+    return Consumer<CollapsibleSideNavigationMenuContext>(
+      builder: (context, menuState, child) {
+        final currentPath = [...parent, item];
+        final currentIndexPath = convertItemsToPath(
+          currentPath,
+          menuState.navigationItems,
+        );
+        final isSelected = menuState.selected.length > 0 &&
+            currentIndexPath.indexed.every(
+              (e) => menuState.selected.elementAtOrNull(e.$1) == e.$2,
+            );
+
+        if (item.children != null && item.children!.length > 0) {
+          return Container(
+            margin: item.isBackButton ? EdgeInsets.only(bottom: 20) : null,
+            child: AppExpansionPanelList(
+              elevation: 0,
+              expansionCallback: (panelIndex, isExpanded) {
+                if (widget.onTapNestedMenuSelectFirst) {
+                  menuState.selected = [...currentIndexPath, 0];
+
+                  if (item.children!.first.onTap != null)
+                    item.children!.first.onTap!();
+
+                  return;
+                }
+
+                menuState.selected = currentIndexPath;
+
+                if (item.onTap != null) item.onTap!();
+              },
+              children: [
+                ExpansionPanel(
+                  canTapOnHeader: true,
+                  backgroundColor: Colors.transparent,
+                  headerBuilder: (context, isExpanded) => CollapsibleTile(
+                    isSelected: isSelected,
+                    navigationItem: item,
+                    disableInteraction: true,
+                  ),
+                  body: Container(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primaryContainer
+                        .withAlpha(60),
+                    child: Column(
+                      children: item.children!
+                          .map(
+                            (nestedItem) => renderItemMenu(
+                              nestedItem,
+                              currentPath,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                  isExpanded: isSelected,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Container(
+          margin: item.isBackButton ? EdgeInsets.only(bottom: 20) : null,
+          child: CollapsibleTile(
+            onTap: () {
+              menuState.selected = currentIndexPath;
+            },
+            isSelected: isSelected,
+            navigationItem: item,
+          ),
+        );
+      },
+    );
+  }
+
+  List<int> convertItemsToPath(
+    List<SideNavigationItem> items,
+    List<SideNavigationItem> startReference,
+  ) {
+    final List<int> path = [];
+    List<SideNavigationItem> reference = startReference;
+
+    items.forEach((item) {
+      final foundIndex = convertItemToPath(item, reference);
+
+      if (foundIndex >= 0) {
+        if (item.children != null && item.children!.length > 0) {
+          reference = item.children!;
+        }
+        return path.add(foundIndex);
+      }
+    });
+
+    return path;
+  }
+
+  convertItemToPath(
+    SideNavigationItem item,
+    List<SideNavigationItem> reference,
+  ) {
+    final foundIndex = reference.indexOf(item);
+
+    if (foundIndex >= 0) {
+      return foundIndex;
+    }
+
+    return -1;
   }
 }

@@ -7,6 +7,7 @@ class SideNavigationItem {
   Widget Function(Color? color, double? size) icon;
   Widget? right;
   void Function()? onTap;
+  List<SideNavigationItem>? children;
 
   SideNavigationItem({
     required this.icon,
@@ -15,5 +16,6 @@ class SideNavigationItem {
     this.onTap,
     this.isHeader = false,
     this.isBackButton = false,
+    this.children,
   });
 }

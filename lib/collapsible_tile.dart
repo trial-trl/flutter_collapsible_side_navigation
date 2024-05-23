@@ -8,11 +8,13 @@ class CollapsibleTile extends StatelessWidget {
   final SideNavigationItem navigationItem;
   final Function? onTap;
   final bool isSelected;
+  final bool disableInteraction;
   final AnimationController? animationController;
 
   CollapsibleTile({
     required this.navigationItem,
     this.isSelected = false,
+    this.disableInteraction = false,
     this.onTap,
     this.animationController,
   });
@@ -32,10 +34,12 @@ class CollapsibleTile extends StatelessWidget {
     final horizontalPadding = 10.0;
 
     return InkWell(
-      onTap: () {
-        if (onTap != null) onTap!();
-        if (navigationItem.onTap != null) navigationItem.onTap!();
-      },
+      onTap: !disableInteraction
+          ? () {
+              if (onTap != null) onTap!();
+              if (navigationItem.onTap != null) navigationItem.onTap!();
+            }
+          : null,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(10.0)),

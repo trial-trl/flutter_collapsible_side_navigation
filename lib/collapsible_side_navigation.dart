@@ -32,14 +32,54 @@ class CollapsibleSideNavigation extends StatefulWidget {
   createState() => _CollapsibleSideNavigationController();
 }
 
+class CollapsibleSideNavigationContextConsumer extends StatelessWidget {
+  final Widget? child;
+  final Widget Function(BuildContext, CollapsibleSideNavigationContext, Widget?)
+      builder;
+
+  const CollapsibleSideNavigationContextConsumer({
+    required this.builder,
+    this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<CollapsibleSideNavigationContext>(
+      child: child,
+      builder: builder,
+    );
+  }
+}
+
+class CollapsibleSideNavigationContextProvider extends StatelessWidget {
+  final Widget? child;
+  final Widget Function(BuildContext, Widget?)? builder;
+
+  const CollapsibleSideNavigationContextProvider({
+    this.child,
+    this.builder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => CollapsibleSideNavigationContext(),
+      child: child,
+      builder: builder,
+    );
+  }
+}
+
 class CollapsibleSideNavigationContext with ChangeNotifier {
-  CollapsibleSideNavigationContext({
+  void init({
     required AnimationController animationController,
     required double maxWidth,
     required double minWidth,
     required bool isCollapsed,
     required CollapseSideNavigationMode collapseMode,
   }) {
+    if (isInitialized) return;
+
     _maxWidth = maxWidth;
     _minWidth = minWidth;
     _isCollapsed = isCollapsed;
@@ -49,7 +89,12 @@ class CollapsibleSideNavigationContext with ChangeNotifier {
     _widthAnimation = Tween<double>(begin: minWidth, end: maxWidth)
         .chain(CurveTween(curve: Curves.ease))
         .animate(animationController);
+    _initialized = true;
+    notifyListeners();
   }
+
+  bool _initialized = false;
+  bool get isInitialized => _initialized;
 
   late double _maxWidth;
   double get maxWidth => _maxWidth;
@@ -109,6 +154,8 @@ class _CollapsibleSideNavigationController
   late AnimationController _animationController;
   late CollapsibleSideNavigationContext _navProvider;
 
+  late bool _contextProvided;
+
   @override
   void initState() {
     super.initState();
@@ -120,7 +167,17 @@ class _CollapsibleSideNavigationController
           ? 1
           : 0,
     );
-    _navProvider = CollapsibleSideNavigationContext(
+    try {
+      _navProvider = Provider.of<CollapsibleSideNavigationContext>(
+        context,
+        listen: false,
+      );
+      _contextProvided = true;
+    } catch (e) {
+      _navProvider = CollapsibleSideNavigationContext();
+      _contextProvided = false;
+    }
+    _navProvider.init(
       animationController: _animationController,
       maxWidth: widget.maxWidth,
       minWidth: widget.minWidth,
@@ -149,17 +206,6 @@ class _CollapsibleSideNavigationController
     super.didUpdateWidget(oldWidget);
   }
 
-  _init() {
-    _animationController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 400),
-      value: widget.collapseMode == CollapseSideNavigationMode.NONE ||
-              !widget.startCollapsed
-          ? 1
-          : 0,
-    );
-  }
-
   @override
   void dispose() {
     _animationController.dispose();
@@ -168,6 +214,8 @@ class _CollapsibleSideNavigationController
 
   @override
   Widget build(BuildContext context) {
+    if (_contextProvided) return render();
+
     return ChangeNotifierProvider(
       create: (_) => _navProvider,
       child: render(),

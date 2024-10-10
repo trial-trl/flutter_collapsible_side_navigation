@@ -117,6 +117,23 @@ class CollapsibleSideNavigationContext with ChangeNotifier {
     notifyListeners();
   }
 
+  void toggle() {
+    if (!isCollapsed)
+      collapse();
+    else
+      expand();
+  }
+
+  void expand() {
+    isCollapsed = false;
+    animationController.forward();
+  }
+
+  void collapse() {
+    isCollapsed = true;
+    animationController.reverse();
+  }
+
   late CollapseSideNavigationMode _collapseMode;
   CollapseSideNavigationMode get collapseMode => _collapseMode;
   set collapseMode(CollapseSideNavigationMode v) {
@@ -135,16 +152,6 @@ class CollapsibleSideNavigationContext with ChangeNotifier {
   Animation<double> get widthAnimation => _widthAnimation;
   set widthAnimation(Animation<double> v) {
     _widthAnimation = v;
-    notifyListeners();
-  }
-
-  void forward() {
-    animationController.forward();
-    notifyListeners();
-  }
-
-  void reverse() {
-    animationController.reverse();
     notifyListeners();
   }
 }
@@ -193,9 +200,9 @@ class _CollapsibleSideNavigationController
         widget.collapseMode != oldWidget.collapseMode) {
       if (widget.collapseMode == CollapseSideNavigationMode.NONE ||
           !widget.startCollapsed) {
-        _animationController.forward();
+        _navProvider.expand();
       } else {
-        _animationController.reverse();
+        _navProvider.collapse();
       }
       _navProvider.animationController = _animationController;
       _navProvider.maxWidth = widget.maxWidth;
@@ -238,12 +245,10 @@ class _CollapsibleSideNavigationController
                 if (navState.collapseMode == CollapseSideNavigationMode.AUTO)
                   return MouseRegion(
                     onEnter: (PointerEvent details) {
-                      navState.forward();
-                      navState.isCollapsed = false;
+                      navState.expand();
                     },
                     onExit: (PointerEvent details) {
-                      navState.reverse();
-                      navState.isCollapsed = true;
+                      navState.collapse();
                     },
                     child: widget.child,
                   );

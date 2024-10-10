@@ -10,12 +10,7 @@ class CollapsibleSideNavigationMaterialToggle extends StatelessWidget {
 
     if (state.collapseMode != CollapseSideNavigationMode.NONE)
       return InkWell(
-        onTap: () {
-          state.isCollapsed = !state.isCollapsed;
-          state.isCollapsed
-              ? state.animationController.reverse()
-              : state.animationController.forward();
-        },
+        onTap: state.toggle,
         child: Padding(
           padding: EdgeInsets.all(10),
           child: AnimatedIcon(

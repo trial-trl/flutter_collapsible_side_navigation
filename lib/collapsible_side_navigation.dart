@@ -86,9 +86,7 @@ class CollapsibleSideNavigationContext with ChangeNotifier {
     _collapseMode = collapseMode;
     _animationController = animationController;
     if (_collapseMode == CollapseSideNavigationMode.NONE) _isCollapsed = false;
-    _widthAnimation = Tween<double>(begin: minWidth, end: maxWidth)
-        .chain(CurveTween(curve: Curves.ease))
-        .animate(animationController);
+    _createWidthAnimation();
     _initialized = true;
     notifyListeners();
   }
@@ -100,6 +98,7 @@ class CollapsibleSideNavigationContext with ChangeNotifier {
   double get maxWidth => _maxWidth;
   set maxWidth(double v) {
     _maxWidth = v;
+    _createWidthAnimation();
     notifyListeners();
   }
 
@@ -107,6 +106,7 @@ class CollapsibleSideNavigationContext with ChangeNotifier {
   double get minWidth => _minWidth;
   set minWidth(double v) {
     _minWidth = v;
+    _createWidthAnimation();
     notifyListeners();
   }
 
@@ -153,6 +153,12 @@ class CollapsibleSideNavigationContext with ChangeNotifier {
   set widthAnimation(Animation<double> v) {
     _widthAnimation = v;
     notifyListeners();
+  }
+
+  void _createWidthAnimation() {
+    _widthAnimation = Tween<double>(begin: minWidth, end: maxWidth)
+        .chain(CurveTween(curve: Curves.ease))
+        .animate(animationController);
   }
 }
 
@@ -204,11 +210,12 @@ class _CollapsibleSideNavigationController
       } else {
         _navProvider.collapse();
       }
-      _navProvider.animationController = _animationController;
-      _navProvider.maxWidth = widget.maxWidth;
-      _navProvider.minWidth = widget.minWidth;
-      _navProvider.collapseMode = widget.collapseMode;
-      _navProvider.isCollapsed = widget.startCollapsed;
+      _navProvider._animationController = _animationController;
+      _navProvider._maxWidth = widget.maxWidth;
+      _navProvider._minWidth = widget.minWidth;
+      _navProvider._collapseMode = widget.collapseMode;
+      _navProvider._isCollapsed = widget.startCollapsed;
+      _navProvider._createWidthAnimation();
     }
     super.didUpdateWidget(oldWidget);
   }

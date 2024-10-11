@@ -119,17 +119,21 @@ class _CollapsibleSideNavigationMenuState
               elevation: 0,
               expansionCallback: (panelIndex, isExpanded) {
                 if (widget.onTapNestedMenuSelectFirst) {
-                  menuState.selected = [...currentIndexPath, 0];
-
-                  if (item.children!.first.onTap != null)
-                    item.children!.first.onTap!();
-
+                  tapItem(
+                    menuState,
+                    item.children!.first,
+                    currentPath,
+                    [...currentIndexPath, 0],
+                  );
                   return;
                 }
 
-                menuState.selected = currentIndexPath;
-
-                if (item.onTap != null) item.onTap!();
+                tapItem(
+                  menuState,
+                  item,
+                  currentPath,
+                  currentIndexPath,
+                );
               },
               children: [
                 ExpansionPanel(
@@ -166,15 +170,42 @@ class _CollapsibleSideNavigationMenuState
         return Container(
           margin: item.isBackButton ? EdgeInsets.only(bottom: 20) : null,
           child: CollapsibleTile(
-            onTap: () {
-              menuState.selected = currentIndexPath;
-            },
+            onTap: () => tapItem(
+              menuState,
+              item,
+              currentPath,
+              currentIndexPath,
+            ),
             isSelected: isSelected,
             navigationItem: item,
           ),
         );
       },
     );
+  }
+
+  void tapItem(
+    CollapsibleSideNavigationMenuContext menuState,
+    SideNavigationItem item,
+    List<SideNavigationItem> currentPath,
+    List<int> currentIndexPath,
+  ) {
+    final navState = Provider.of<CollapsibleSideNavigationContext>(
+      context,
+      listen: false,
+    );
+
+    if (navState.onTapMenuItem != null) {
+      final canSelect = navState.onTapMenuItem!(currentPath);
+
+      if (!canSelect) return;
+    }
+
+    menuState.selected = currentIndexPath;
+
+    if (item.onTap != null) {
+      item.onTap!();
+    }
   }
 
   List<int> convertItemsToPath(

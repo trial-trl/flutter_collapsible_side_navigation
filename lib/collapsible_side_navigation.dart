@@ -3,6 +3,8 @@ library collapsible_side_navigation;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'side_navigation_item.dart';
+
 enum CollapseSideNavigationMode {
   AUTO,
   MANUAL,
@@ -17,6 +19,7 @@ class CollapsibleSideNavigation extends StatefulWidget {
   final Widget? child;
   final CollapseSideNavigationMode collapseMode;
   final bool startCollapsed;
+  final bool Function(List<SideNavigationItem> path)? onTapMenuItem;
 
   CollapsibleSideNavigation({
     this.header,
@@ -25,6 +28,7 @@ class CollapsibleSideNavigation extends StatefulWidget {
     this.elevation = 12.0,
     this.collapseMode = CollapseSideNavigationMode.AUTO,
     this.startCollapsed = true,
+    this.onTapMenuItem,
     this.child,
   });
 
@@ -90,6 +94,8 @@ class CollapsibleSideNavigationContext with ChangeNotifier {
     _initialized = true;
     notifyListeners();
   }
+
+  bool Function(List<SideNavigationItem> path)? onTapMenuItem;
 
   bool _initialized = false;
   bool get isInitialized => _initialized;
@@ -197,6 +203,7 @@ class _CollapsibleSideNavigationController
       collapseMode: widget.collapseMode,
       isCollapsed: widget.startCollapsed,
     );
+    _navProvider.onTapMenuItem = widget.onTapMenuItem;
   }
 
   @override
@@ -216,6 +223,9 @@ class _CollapsibleSideNavigationController
       _navProvider._collapseMode = widget.collapseMode;
       _navProvider._isCollapsed = widget.startCollapsed;
       _navProvider._createWidthAnimation();
+    }
+    if (widget.onTapMenuItem != oldWidget.onTapMenuItem) {
+      _navProvider.onTapMenuItem = widget.onTapMenuItem;
     }
     super.didUpdateWidget(oldWidget);
   }
